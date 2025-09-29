@@ -1,0 +1,154 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Typology Challenge</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .hidden { display: none; }
+        .grayed { color: gray; text-decoration: line-through; }
+        .player-inputs, .game-area { margin-top: 20px; }
+        .scoreboard { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Typology Challenge</h1>
+
+    <div id="setup">
+        <h2>Entrez les noms des joueurs</h2>
+        <div class="player-inputs">
+            <label>Joueur 1: <input type="text" id="player1Name" /></label><br><br>
+            <label>Joueur 2: <input type="text" id="player2Name" /></label><br><br>
+            <label>Joueur 3: <input type="text" id="player3Name" /></label><br><br>
+            <button onclick="startGame()">Commencer la partie</button>
+        </div>
+    </div>
+
+    <div id="game" class="hidden">
+        <h2 id="roundInfo"></h2>
+        <div>
+            <label>Typologie:
+                <select id="typologySelect">
+                    <option value="Voitures">Voitures</option>
+                    <option value="Fruits">Fruits</option>
+                    <option value="Pays">Pays</option>
+                </select>
+            </label>
+            <br><br>
+            <label>Mot secret (meneur): <input type="text" id="secretWord" /></label>
+            <button onclick="setSecret()">Valider le mot secret</button>
+        </div>
+
+        <div class="game-area hidden" id="gameArea">
+            <h3 id="currentPlayerTurn"></h3>
+            <label>Mot proposé: <input type="text" id="playerWord" /></label>
+            <button onclick="submitWord()">Soumettre</button>
+
+            <h3>Mots utilisés</h3>
+            <ul id="usedWordsList"></ul>
+
+            <div class="scoreboard">
+                <h3>Scores</h3>
+                <ul id="scoreBoard"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let players = [];
+        let scores = {};
+        let usedWords = [];
+        let currentPlayerIndex = 0;
+        let round = 1;
+        let secretWord = "";
+        let leaderIndex = 0;
+
+        function startGame() {
+            const p1 = document.getElementById("player1Name").value || "Joueur 1";
+            const p2 = document.getElementById("player2Name").value || "Joueur 2";
+            const p3 = document.getElementById("player3Name").value || "Joueur 3";
+            players = [p1, p2, p3];
+            players.forEach(p => scores[p] = 0);
+            document.getElementById("setup").classList.add("hidden");
+            document.getElementById("game").classList.remove("hidden");
+            updateRoundInfo();
+        }
+
+        function updateRoundInfo() {
+            document.getElementById("roundInfo").innerText = `Manche ${round} - Meneur: ${players[leaderIndex]}`;
+            document.getElementById("gameArea").classList.add("hidden");
+            document.getElementById("secretWord").value = "";
+            usedWords = [];
+            updateUsedWords();
+        }
+
+        function setSecret() {
+            secretWord = document.getElementById("secretWord").value.trim().toLowerCase();
+            if (secretWord === "") {
+                alert("Veuillez entrer un mot secret.");
+                return;
+            }
+            currentPlayerIndex = (leaderIndex + 1) % players.length;
+            document.getElementById("gameArea").classList.remove("hidden");
+            updateTurnDisplay();
+            updateScoreBoard();
+        }
+
+        function updateTurnDisplay() {
+            document.getElementById("currentPlayerTurn").innerText = `Tour de ${players[currentPlayerIndex]}`;
+        }
+
+        function submitWord() {
+            const word = document.getElementById("playerWord").value.trim().toLowerCase();
+            if (word === "") return;
+            if (usedWords.includes(word)) {
+                alert("Ce mot a déjà été utilisé.");
+                return;
+            }
+            usedWords.push(word);
+            updateUsedWords();
+
+            if (word === secretWord) {
+                alert(`${players[currentPlayerIndex]} a deviné le mot secret ! Score = 0 pour ce joueur.`);
+                scores[players[currentPlayerIndex]] = 0;
+                leaderIndex = (leaderIndex + 1) % players.length;
+                round++;
+                updateRoundInfo();
+                return;
+            } else {
+                scores[players[currentPlayerIndex]] += 1;
+            }
+
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            if (currentPlayerIndex === leaderIndex) {
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            }
+            updateTurnDisplay();
+            updateScoreBoard();
+            document.getElementById("playerWord").value = "";
+        }
+
+        function updateUsedWords() {
+            const list = document.getElementById("usedWordsList");
+            list.innerHTML = "";
+            usedWords.forEach(word => {
+                const li = document.createElement("li");
+                li.innerText = word;
+                li.classList.add("grayed");
+                list.appendChild(li);
+            });
+        }
+
+        function updateScoreBoard() {
+            const list = document.getElementById("scoreBoard");
+            list.innerHTML = "";
+            players.forEach(p => {
+                const li = document.createElement("li");
+                li.innerText = `${p}: ${scores[p]} points`;
+                list.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>
