@@ -1,0 +1,181 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Typology Challenge</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        h1 { color: #333; }
+        .section { margin-bottom: 20px; }
+        .grille { margin-top: 10px; }
+        .grille span { display: inline-block; padding: 5px 10px; margin: 5px; background-color: #e0e0e0; border-radius: 5px; }
+        .grille .used { background-color: #999; color: #fff; }
+        .scoreboard { margin-top: 20px; }
+        .scoreboard div { margin: 5px 0; }
+        input[type="text"] { padding: 5px; margin-right: 10px; }
+        button { padding: 5px 10px; }
+    </style>
+</head>
+<body>
+    <h1>Typology Challenge</h1>
+
+    <div class="section" id="setup">
+        <h2>Configuration de la partie</h2>
+        <label>Nombre de joueurs : <input type="number" id="playerCount" min="2" max="10" value="3"></label>
+        <button onclick="setupPlayers()">Valider</button>
+        <div id="playerNames"></div>
+    </div>
+
+    <div class="section" id="game" style="display:none;">
+        <h2>Manche <span id="roundNumber">1</span></h2>
+        <div id="meneurInfo"></div>
+        <div id="typologySelection">
+            <label>Typologie :
+                <select id="typology">
+                    <option value="Voitures">Voitures</option>
+                    <option value="Fruits">Fruits</option>
+                    <option value="Pays">Pays</option>
+                </select>
+            </label>
+            <label>Mot secret : <input type="text" id="secretWord"></label>
+            <button onclick="startRound()">Commencer la manche</button>
+        </div>
+
+        <div id="turnSection" style="display:none;">
+            <p>Tour de <span id="currentPlayerName"></span></p>
+            <input type="text" id="playerInput">
+            <button onclick="submitWord()">Valider</button>
+            <div class="grille" id="usedWordsGrid"></div>
+        </div>
+
+        <div class="scoreboard" id="scoreboard"></div>
+    </div>
+
+    <script>
+        let players = [];
+        let scores = {};
+        let usedWords = [];
+        let round = 1;
+        let meneurIndex = 0;
+        let currentPlayerIndex = 0;
+        let secretWord = "";
+
+        function setupPlayers() {
+            const count = parseInt(document.getElementById("playerCount").value);
+            const container = document.getElementById("playerNames");
+            container.innerHTML = "";
+            players = [];
+            for (let i = 0; i < count; i++) {
+                const input = document.createElement("input");
+                input.type = "text";
+                input.placeholder = "Nom du joueur " + (i + 1);
+                input.id = "player_" + i;
+                container.appendChild(input);
+                container.appendChild(document.createElement("br"));
+            }
+            const btn = document.createElement("button");
+            btn.textContent = "Démarrer le jeu";
+            btn.onclick = initializeGame;
+            container.appendChild(btn);
+        }
+
+        function initializeGame() {
+            const count = parseInt(document.getElementById("playerCount").value);
+            for (let i = 0; i < count; i++) {
+                const name = document.getElementById("player_" + i).value.trim();
+                if (name === "") {
+                    alert("Veuillez entrer tous les noms.");
+                    return;
+                }
+                players.push(name);
+                scores[name] = 0;
+            }
+            document.getElementById("setup").style.display = "none";
+            document.getElementById("game").style.display = "block";
+            updateMeneurInfo();
+        }
+
+        function updateMeneurInfo() {
+            const meneur = players[meneurIndex];
+            document.getElementById("meneurInfo").innerHTML = "<strong>Meneur :</strong> " + meneur;
+            document.getElementById("typologySelection").style.display = "block";
+            document.getElementById("turnSection").style.display = "none";
+            document.getElementById("secretWord").value = "";
+            usedWords = [];
+            updateUsedWordsGrid();
+        }
+
+        function startRound() {
+            secretWord = document.getElementById("secretWord").value.trim().toLowerCase();
+            if (secretWord === "") {
+                alert("Veuillez entrer un mot secret.");
+                return;
+            }
+            currentPlayerIndex = (meneurIndex + 1) % players.length;
+            document.getElementById("typologySelection").style.display = "none";
+            document.getElementById("turnSection").style.display = "block";
+            updateTurnInfo();
+        }
+
+        function updateTurnInfo() {
+            const name = players[currentPlayerIndex];
+            document.getElementById("currentPlayerName").textContent = name;
+            document.getElementById("playerInput").value = "";
+        }
+
+        function submitWord() {
+            const word = document.getElementById("playerInput").value.trim().toLowerCase();
+            const player = players[currentPlayerIndex];
+            if (word === "") return;
+            if (usedWords.includes(word)) {
+                alert("Mot déjà utilisé !");
+                return;
+            }
+            usedWords.push(word);
+            updateUsedWordsGrid();
+            if (word === secretWord) {
+                alert(player + " a deviné le mot secret ! Il obtient 0 point.");
+            } else {
+                scores[player] += 1;
+            }
+            updateScoreboard();
+            nextTurn();
+        }
+
+        function updateUsedWordsGrid() {
+            const grid = document.getElementById("usedWordsGrid");
+            grid.innerHTML = "";
+            usedWords.forEach(w => {
+                const span = document.createElement("span");
+                span.textContent = w;
+                span.className = "used";
+                grid.appendChild(span);
+            });
+        }
+
+        function updateScoreboard() {
+            const board = document.getElementById("scoreboard");
+            board.innerHTML = "<h3>Scores</h3>";
+            players.forEach(p => {
+                board.innerHTML += "<div>" + p + " : " + scores[p] + " point(s)</div>";
+            });
+        }
+
+        function nextTurn() {
+            do {
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            } while (currentPlayerIndex === meneurIndex);
+
+            if (usedWords.includes(secretWord)) {
+                round++;
+                meneurIndex = (meneurIndex + 1) % players.length;
+                document.getElementById("roundNumber").textContent = round;
+                updateMeneurInfo();
+            } else {
+                updateTurnInfo();
+            }
+        }
+    </script>
+</body>
+</html>
